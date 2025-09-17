@@ -67,3 +67,15 @@ Authentication: ASP.NET Core Identity (cookie-based)
 Frontend: Razor Views, Bootstrap, FontAwesome
 
 Other: Dependency Injection, LINQ, Data Annotations Validation
+
+Future Enhancements
+
+Email notifications on claim submission/approval
+
+Export reports to PDF/Excel
+
+Improved UI with React or Blazor
+
+Two-factor authentication for added security
+
+Integration with payroll system
