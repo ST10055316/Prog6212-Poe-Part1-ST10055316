@@ -1,0 +1,237 @@
+﻿@model ContractMonthlyClaimSystem.Models.ViewModels.DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <h1 class="display-4">
+            <i class="fas fa-tachometer-alt me-3"></i>Dashboard
+        </h1>
+        <p class="lead">Welcome to the Contact Monthly Claim System</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">Total Claims</h5>
+                        <h2 class="card-text">@Model.TotalClaims</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-clipboard-list fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">Pending</h5>
+                        <h2 class="card-text">@Model.PendingClaims</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-clock fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">Approved</h5>
+                        <h2 class="card-text">@Model.ApprovedClaims</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-check-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-danger">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">Rejected</h5>
+                        <h2 class="card-text">@Model.RejectedClaims</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-times-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-dollar-sign me-2"></i>Financial Summary
+                </h5>
+                <div class="row">
+                    <div class="col-6">
+                        <p class="card-text">
+                            <strong>Total Amount:</strong><br>
+                            <span class="h4 text-primary">@Model.TotalAmount.ToString("C")</span>
+                        </p>
+                    </div>
+                    <div class="col-6">
+                        <p class="card-text">
+                            <strong>Approved Amount:</strong><br>
+                            <span class="h4 text-success">@Model.ApprovedAmount.ToString("C")</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-chart-pie me-2"></i>Quick Actions
+                </h5>
+                @if (User.IsInRole("Lecturer"))
+                {
+                    <a href="@Url.Action("Create", "Claims")" class="btn btn-primary mb-2">
+                        <i class="fas fa-plus me-1"></i>Submit New Claim
+                    </a>
+
+                    <br>
+                    <a href="@Url.Action("Index", "Claims")" class="btn btn-outline-primary">
+                        <i class="fas fa-list me-1"></i>View My Claims
+                    </a>
+                }
+                else
+                {
+                    <a href="@Url.Action("Pending", "Claims")" class="btn btn-warning mb-2">
+                        <i class="fas fa-clock me-1"></i>Review Pending Claims
+                    </a>
+
+                    <br>
+                    <a href="@Url.Action("Index", "Claims")" class="btn btn-outline-primary">
+                        <i class="fas fa-list me-1"></i>View All Claims
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-history me-2"></i>Recent Claims</h5>
+            </div>
+            <div class="card-body">
+                @if (Model.RecentClaims.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>@(User.IsInRole("Lecturer") ? "" : "Lecturer")</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var claim in Model.RecentClaims)
+                                {
+                                    <tr>
+                                        <td>@claim.ClaimId</td>
+                                        <td>@(!User.IsInRole("Lecturer") ? claim.LecturerName : "")</td>
+                                        <td>@claim.TotalAmount.ToString("C")</td>
+                                        <td>
+                                            <span class="badge bg-@GetStatusBadgeClass(claim.Status)">
+                                                @claim.Status
+                                            </span>
+                                        </td>
+                                        <td>@claim.SubmissionDate.ToString("yyyy-MM-dd")</td>
+                                        <td>
+                                            <a href="@Url.Action("Details", "Claims", new { id = claim.ClaimId })"
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted">No recent claims found.</p>
+                }
+            </div>
+        </div>
+    </div>
+
+    @if (!User.IsInRole("Lecturer") && Model.ClaimsAwaitingMyApproval.Any())
+    {
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-warning text-white">
+                    <h5><i class="fas fa-exclamation-triangle me-2"></i>Awaiting My Approval</h5>
+                </div>
+                <div class="card-body">
+                    @foreach (var claim in Model.ClaimsAwaitingMyApproval)
+                    {
+                        <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
+                            <div>
+                                <strong>Claim #@claim.ClaimId</strong><br>
+                                <small class="text-muted">@claim.LecturerName</small><br>
+                                <span class="text-success">@claim.TotalAmount.ToString("C")</span>
+                            </div>
+                            <div>
+                                <a href="@Url.Action("Details", "Claims", new { id = claim.ClaimId })"
+                                   class="btn btn-sm btn-warning">
+                                    Review
+                                </a>
+                            </div>
+                        </div>
+                    }
+                    <div class="text-center mt-3">
+                        <a href="@Url.Action("Pending", "Claims")" class="btn btn-outline-warning">
+                            View All Pending
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@functions {
+    string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "Submitted" => "primary",
+            "UnderReview" => "warning",
+            "Approved" => "success",
+            "Rejected" => "danger",
+            "Paid" => "info",
+            _ => "secondary"
+        };
+    }
+}

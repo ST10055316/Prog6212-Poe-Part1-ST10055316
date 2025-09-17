@@ -1,0 +1,241 @@
+﻿@model ContractMonthlyClaimSystem.Models.ViewModels.ClaimSearchViewModel
+    ViewData["Title"] = User.IsInRole("Lecturer") ? "My Claims" : "All Claims";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>
+        <i class="fas fa-list me-2"></i>@ViewData["Title"]
+    </h2>
+    @if (User.IsInRole("Lecturer"))
+    {
+        <a href="@Url.Action("Create")" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i>Submit New Claim
+        </a>
+    }
+</div>
+
+<!-- Search/Filter Panel -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5><i class="fas fa-search me-2"></i>Search & Filter</h5>
+    </div>
+    <div class="card-body">
+        <form method="get" asp-action="Index">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label asp-for="Status" class="form-label">Status</label>
+                        <select asp-for="Status" class="form-select" asp-items="@Html.GetEnumSelectList<ClaimStatus>()">
+                            <option value="">All Statuses</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label asp-for="FromDate" class="form-label">From Date</label>
+                        <input asp-for="FromDate" class="form-control" type="date" />
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label asp-for="ToDate" class="form-label">To Date</label>
+                        <input asp-for="ToDate" class="form-control" type="date" />
+                    </div>
+                </div>
+                @if (!User.IsInRole("Lecturer"))
+                {
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label asp-for="LecturerId" class="form-label">Lecturer</label>
+                            <select asp-for="LecturerId" class="form-select" asp-items="@(new SelectList(Model.AvailableLecturers, "UserId", "Name"))">
+                                <option value="">All Lecturers</option>
+                            </select>
+                        </div>
+                    </div>
+                }
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label asp-for="SearchText" class="form-label">Search Text</label>
+                        <input asp-for="SearchText" class="form-control" placeholder="Search in description or lecturer name..." />
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search me-1"></i>Search
+                            </button>
+                            <a href="@Url.Action("Index")" class="btn btn-outline-secondary">
+                                <i class="fas fa-refresh me-1"></i>Clear
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Results -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between">
+        <span>
+            <i class="fas fa-table me-2"></i>Claims
+            (@Model.TotalResults results)
+        </span>
+        <span class="text-muted">
+            Page @Model.Page of @Model.TotalPages
+        </span>
+    </div>
+    <div class="card-body">
+        @if (Model.Results.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            @if (!User.IsInRole("Lecturer"))
+                            {
+                                <th>Lecturer</th>
+                            }
+                            <th>Hours</th>
+                            <th>Rate</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th>Period</th>
+                            <th>Submitted</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var claim in Model.Results)
+                        {
+                            <tr>
+                                <td><strong>@claim.ClaimId</strong></td>
+                                @if (!User.IsInRole("Lecturer"))
+                                {
+                                    <td>@claim.LecturerName</td>
+                                }
+                                <td>@claim.HoursWorked.ToString("F2")</td>
+                                <td>@claim.HourlyRate.ToString("C")</td>
+                                <td><strong>@claim.TotalAmount.ToString("C")</strong></td>
+                                <td>
+                                    <span class="badge bg-@GetStatusBadgeClass(claim.Status)">
+                                        @claim.Status
+                                    </span>
+                                </td>
+                                <td>@claim.ClaimPeriod.ToString("MMM yyyy")</td>
+                                <td>@claim.SubmissionDate.ToString("yyyy-MM-dd")</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="@Url.Action("Details", new { id = claim.ClaimId })"
+                                           class="btn btn-outline-primary" title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        @if (User.IsInRole("Lecturer") && claim.Status == "Draft")
+                                        {
+                                            <a href="@Url.Action("Edit", new { id = claim.ClaimId })"
+                                               class="btn btn-outline-secondary" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        }
+                                        @if (claim.CanApprove && (User.IsInRole("ProgrammeCoordinator") || User.IsInRole("AcademicManager")))
+                                        {
+                                            <a href="@Url.Action("Approve", new { id = claim.ClaimId })"
+                                               class="btn btn-outline-success" title="Approve">
+                                                <i class="fas fa-check"></i>
+                                            </a>
+                                            <a href="@Url.Action("Reject", new { id = claim.ClaimId })"
+                                               class="btn btn-outline-danger" title="Reject">
+                                                <i class="fas fa-times"></i>
+                                            </a>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            @if (Model.TotalPages > 1)
+            {
+                <nav aria-label="Claims pagination">
+                    <ul class="pagination justify-content-center">
+                        @if (Model.Page > 1)
+                        {
+                            <li class="page-item">
+                                <a class="page-link" href="@GetPageUrl(Model.Page - 1)">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                            </li>
+                        }
+
+                        @for (int i = Math.Max(1, Model.Page - 2); i <= Math.Min(Model.TotalPages, Model.Page + 2); i++)
+                        {
+                            <li class="page-item @(i == Model.Page ? "active" : "")">
+                                <a class="page-link" href="@GetPageUrl(i)">@i</a>
+                            </li>
+                        }
+
+                        @if (Model.Page < Model.TotalPages)
+                        {
+                            <li class="page-item">
+                                <a class="page-link" href="@GetPageUrl(Model.Page + 1)">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </nav>
+            }
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No claims found</h5>
+                <p class="text-muted">Try adjusting your search criteria or submit a new claim.</p>
+                @if (User.IsInRole("Lecturer"))
+                {
+                    <a href="@Url.Action("Create")" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>Submit New Claim
+                    </a>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@functions {
+    string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "Submitted" => "primary",
+            "UnderReview" => "warning",
+            "Approved" => "success",
+            "Rejected" => "danger",
+            "Paid" => "info",
+            "Draft" => "secondary",
+            _ => "secondary"
+        };
+    }
+
+    string GetPageUrl(int page)
+    {
+        var routeValues = new RouteValueDictionary(ViewContext.RouteData.Values);
+        var queryValues = ViewContext.HttpContext.Request.Query
+            .Where(q => q.Key != "page")
+            .ToDictionary(q => q.Key, q => (object)q.Value.ToString());
+
+        queryValues["page"] = page;
+
+        return Url.Action("Index", queryValues);
+    }
+}
